@@ -1,0 +1,16 @@
+# REGISTER
+
+curl -X POST "http://localhost:4004/odata/v4/UtilityService/Customers" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "John Doe",
+    "email": "john.doe@example.com",
+    "password": "StrongPass123",
+    "role": "CUSTOMER",
+    "phone": "9876543210",
+    "address": "123 Main Street, City",
+    "account_type": "RESIDENTIAL",
+    "region": "North",
+    "category": "Domestic"
+  }'
+

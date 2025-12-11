@@ -1,0 +1,26 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  config:
+    activate:
+      on-profile: default
+  sql:
+    init:
+      platform: h2
+cds:
+  data-source:
+    auto-config:
+      enabled: false
+  outbox:
+    services:
+      DefaultOutboxOrdered:
+        enabled: false
+      DefaultOutboxUnordered:
+        enabled: false
+    enabled: false
+  jwt:
+    secret: "smart-utility-management-secret-key"
+    access-expiration-ms: 900000
+    refresh-expiration-ms: 604800000
+

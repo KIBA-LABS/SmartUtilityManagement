@@ -1,13 +1,23 @@
 spring:
+  datasource:
+    platform: postgres
+    driver-class-name: org.postgresql.Driver
+    password: root
+    url: jdbc:postgresql://localhost:5432/smartutility
+    username: postgres
+    hikari:
+      minimum-idle: 1
+      maximum-pool-size: 4
   jpa:
+    database: postgresql
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
-      ddl-auto: create-drop
-  config:
-    activate:
-      on-profile: default
-  sql:
-    init:
-      platform: h2
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: true
+
 cds:
   data-source:
     auto-config:
@@ -19,7 +29,7 @@ cds:
       DefaultOutboxUnordered:
         enabled: false
     enabled: false
-  jwt:
+jwt:
     secret: "smart-utility-management-secret-key"
     access-expiration-ms: 900000
     refresh-expiration-ms: 604800000

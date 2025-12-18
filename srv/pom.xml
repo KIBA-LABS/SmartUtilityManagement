@@ -62,16 +62,14 @@
 			<version>0.11.5</version>
 			<scope>runtime</scope>
 		</dependency>
-
-<!--		<dependency>-->
-<!--			<groupId>org.xerial</groupId>-->
-<!--			<artifactId>sqlite-jdbc</artifactId>-->
-<!--			<scope>runtime</scope>-->
-<!--		</dependency>-->
-
 		<dependency>
-			<groupId>com.h2database</groupId>
-			<artifactId>h2</artifactId>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.sap.cds</groupId>
+			<artifactId>cds-feature-postgresql</artifactId>
 			<scope>runtime</scope>
 		</dependency>
 	</dependencies>
@@ -166,7 +164,7 @@
 								<command>build --for java</command>
 <!--								<command>deploy &#45;&#45;to h2 &#45;&#45;with-mocks &#45;&#45;dry &#45;&#45;out "${project.basedir}/src/main/resources/schema-h2.sql"</command>-->
 <!--								<command>deploy &#45;&#45;to sqlite &#45;&#45;with-mocks &#45;&#45;dry &#45;&#45;out "${project.basedir}/src/main/resources/schema-sqlite.sql"</command>-->
-								<command>deploy --to h2 --with-mocks --dry --out "${project.basedir}/src/main/resources/schema-h2.sql"</command>
+								<command>deploy --to postgres --with-mocks --dry --out "${project.basedir}/src/main/resources/schema-postgres.sql"</command>
 							</commands>
 						</configuration>
 					</execution>

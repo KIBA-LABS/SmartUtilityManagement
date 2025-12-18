@@ -1,9 +1,6 @@
 package customer.smartutilitymanagement.handlers;
 
-import cds.gen.smartutility.AccountType;
-import cds.gen.smartutility.CustomerEntity_;
-import cds.gen.smartutility.CustomerRole;
-import cds.gen.smartutility.CustomerStatus;
+import cds.gen.smartutility.*;
 import cds.gen.utilityservice.Customers;
 import cds.gen.utilityservice.Customers_;
 import cds.gen.utilityservice.LoginContext;
@@ -24,6 +21,7 @@ import com.sap.cds.services.handler.annotations.Before;
 import com.sap.cds.services.handler.annotations.On;
 import com.sap.cds.services.handler.annotations.ServiceName;
 import com.sap.cds.services.persistence.PersistenceService;
+import customer.smartutilitymanagement.utils.JwtUtils;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import jakarta.annotation.PostConstruct;
@@ -47,35 +45,24 @@ public class SMartUtilityHandler implements EventHandler {
 
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder(12);
+    private final JwtUtils jwtUtils;
 
-    public SMartUtilityHandler(PersistenceService db) {
+    public SMartUtilityHandler(PersistenceService db, JwtUtils jwtUtils) {
         this.db = db;
-    }
-
-
-    @Autowired
-    DataSource dataSource;
-
-    @PostConstruct
-    public void logDbUrl() throws Exception {
-        try (Connection con = dataSource.getConnection()) {
-            System.out.println("### JDBC URL = " + con.getMetaData().getURL());
-        }
+        this.jwtUtils = jwtUtils;
     }
 
     @Before(event = CqnService.EVENT_CREATE, entity = Customers_.CDS_NAME)
     public void validateCustomers(CdsCreateEventContext ctx, List<Customers> customers) {
-
         CdsModel model = ctx.getModel();
 
-        // ---------- Load enums once ----------
         CdsEnumType<?> enumAccountType = model.getType("smartUtility.AccountType").as(CdsEnumType.class);
         CdsEnumType<?> enumCustomerStatus = model.getType("smartUtility.CustomerStatus").as(CdsEnumType.class);
         CdsEnumType<?> enumCustomerRole = model.getType("smartUtility.CustomerRole").as(CdsEnumType.class);
 
-        Set<String> allowedAccountTypes = enumAccountType.enumerals().keySet();
-        Set<String> allowedStatus = enumCustomerStatus.enumerals().keySet();
         Set<String> allowedRoles = enumCustomerRole.enumerals().keySet();
+        Set<String> allowedStatus = enumCustomerStatus.enumerals().keySet();
+        Set<String> allowedAccountTypes = enumAccountType.enumerals().keySet();
 
         for (Customers c : customers) {
             if (c.getName() == null || c.getName().isBlank()) {
@@ -93,6 +80,8 @@ public class SMartUtilityHandler implements EventHandler {
             if (c.getPassword().length() < 8) {
                 throw new ServiceException(ErrorStatuses.BAD_REQUEST, "Password must be at least 8 characters");
             }
+            String encodedPassword = passwordEncoder.encode(c.getPassword());
+            c.setPassword(encodedPassword);
             String role = c.getRole();
             if (role == null || role.isBlank()) {
                 throw new ServiceException(ErrorStatuses.BAD_REQUEST, "Role is required");
@@ -130,8 +119,8 @@ public class SMartUtilityHandler implements EventHandler {
                         "Invalid account type '" + accountType + "', allowed: " + allowedAccountTypes);
             }
         }
-    }
 
+    }
 
     @Before(event = CqnService.EVENT_UPDATE, entity = Customers_.CDS_NAME)
     public void validateCustomersOnUpdate(CdsUpdateEventContext ctx, List<Customers> customers) {
@@ -213,6 +202,56 @@ public class SMartUtilityHandler implements EventHandler {
                         "Invalid account type '" + customer.getAccountType() + "', allowed: " + allowedAccountTypes);
             }
         }
+    }
+
+
+    @On(event = "login")
+    public void onLogin(LoginContext ctx) {
+
+        String email = ctx.getEmail();
+        String password = ctx.getPassword();
+
+        if (email == null || password == null) {
+            throw badrequest("Email and password are required");
+        }
+        List<CustomerEntity> users = db.run(
+                Select.from(CustomerEntity_.class)
+                        .where(u -> u.email().eq(email))
+        ).listOf(CustomerEntity.class);
+
+        if (users.isEmpty()) {
+            throw badrequest("Invalid credentials");
+        }
+
+        CustomerEntity user = users.get(0);
+
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw badrequest("Invalid credentials");
+        }
+
+        Map<String, Object> claims = Map.of(
+                "email", user.getEmail(),
+                "role", user.getRole()
+        );
+        String accessToken = jwtUtils.generateAccessToken(user.getId(), claims);
+        String refreshToken = jwtUtils.generateRefreshToken(user.getId());
+
+        LoginContext.ReturnType result = LoginContext.ReturnType.create();
+        result.setAccessToken(accessToken);
+        result.setRefreshToken(refreshToken);
+        result.setTokenType("Bearer");
+
+        ctx.setResult(result);
+    }
+
+
+
+    private boolean isBlank(String s) {
+        return s == null || s.trim().isEmpty();
+    }
+
+    private ServiceException badrequest(String msg) {
+        return new ServiceException(ErrorStatuses.BAD_REQUEST, msg);
     }
 
 }

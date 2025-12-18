@@ -10,5 +10,23 @@
   "scripts": {
     "start": "cds run",
     "build": "cds build"
+  },
+  "cds": {
+    "requires": {
+      "db": {
+        "kind": "postgres",
+        "impl": "@cap-js/postgres",
+        "credentials": {
+          "host": "localhost",
+          "port": 5432,
+          "user": "postgres",
+          "password": "root",
+          "database": "smartutility"
+        }
+      }
+    }
+  },
+  "dependencies": {
+    "@cap-js/postgres": "^2.1.0"
   }
 }
